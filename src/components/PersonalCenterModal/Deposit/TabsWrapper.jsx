@@ -10,6 +10,8 @@ import { FaExclamationTriangle, FaRegFileAlt } from "react-icons/fa";
 import { io } from "socket.io-client";
 import { RiCustomerService2Line } from "react-icons/ri";
 import { AuthContext } from "@/Context/AuthContext";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 // OpayDevicesPanel hidden from user view (no import needed)
 
 const TabsWrapper = ({ language }) => {
@@ -32,7 +34,6 @@ const TabsWrapper = ({ language }) => {
   const [viewerApiKey, setViewerApiKey] = useState(null);
   const [opayEnabled, setOpayEnabled] = useState(false);
 
-
   // Fetch Deposit Methods + Promotions
   useEffect(() => {
     const fetchData = async () => {
@@ -41,7 +42,9 @@ const TabsWrapper = ({ language }) => {
         setError(null);
 
         const [methodsRes, promoRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/api/deposit-payment-method/methods`),
+          axios.get(
+            `${import.meta.env.VITE_API_URL}/api/deposit-payment-method/methods`
+          ),
           axios.get(`${import.meta.env.VITE_API_URL}/api/promotions`), // তোমার promotion API
         ]);
 
@@ -55,9 +58,13 @@ const TabsWrapper = ({ language }) => {
         if (methods.length > 0) {
           const first = methods[0];
           setSelectedTab(first._id);
-          setMethodName( first.methodName.toLowerCase() );
-          const initialGateways = Array.isArray(first.gateway) ? first.gateway : [];
-          const nonOpay = initialGateways.filter((g) => String(g).toLowerCase() !== "opay");
+          setMethodName(first.methodName.toLowerCase());
+          const initialGateways = Array.isArray(first.gateway)
+            ? first.gateway
+            : [];
+          const nonOpay = initialGateways.filter(
+            (g) => String(g).toLowerCase() !== "opay"
+          );
           setSelectedProcessTab(nonOpay[0] || initialGateways[0] || null);
         }
       } catch (err) {
@@ -78,13 +85,18 @@ const TabsWrapper = ({ language }) => {
   useEffect(() => {
     const fetchViewerKey = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_API}api/v1/frontend/opay/viewer-key`);
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_API}api/v1/frontend/opay/viewer-key`
+        );
         const key = res?.data?.data?.viewerApiKey || null;
         const active = !!res?.data?.data?.active;
         setViewerApiKey(key);
         setOpayEnabled(active && !!key);
       } catch (e) {
-        console.error("Failed to fetch viewer API key:", e?.response?.data || e.message);
+        console.error(
+          "Failed to fetch viewer API key:",
+          e?.response?.data || e.message
+        );
         setViewerApiKey(null);
         setOpayEnabled(false);
       }
@@ -109,7 +121,9 @@ const TabsWrapper = ({ language }) => {
     s.on("viewer:device", () => {
       // Optional: handle individual device updates if needed later
     });
-    return () => { s.disconnect(); };
+    return () => {
+      s.disconnect();
+    };
   }, [viewerApiKey, opayEnabled]);
 
   const handleProcessTabChange = (processTab) => {
@@ -127,37 +141,49 @@ const TabsWrapper = ({ language }) => {
       promo.payment_methods?.includes(method._id.toString())
     );
 
-    let processTabs = method.gateway?.map((gateway) => {
-      const gatewayPromotions = methodPromotions
-        .flatMap((promo) => {
-          if (!promo.promotion_bonuses) return [];
-          return promo.promotion_bonuses
-            .filter(
-              (bonus) =>
-                bonus.payment_method?._id?.toString() === method._id.toString() &&
-                bonus.payment_method?.gateway?.includes(gateway)
-            )
-            .map((bonus) => ({
-              bn: `${promo.title_bd} (${
-                bonus.bonus_type === "Percentage" ? `${bonus.bonus}%` : `৳${bonus.bonus}`
-              })`,
-              en: `${promo.title} (${
-                bonus.bonus_type === "Percentage" ? `${bonus.bonus}%` : `$${bonus.bonus}`
-              })`,
-              condition: `≥৳${bonus.bonus_type === "Percentage" ? 100 : bonus.bonus}`,
-              _id: `${promo._id}-${bonus.payment_method._id}-${gateway}`,
-              minAmount: bonus.minAmount || 100,
-              maxAmount: bonus.maxAmount || 10000,
-            }));
-        })
-        .filter(Boolean);
+    let processTabs =
+      method.gateway?.map((gateway) => {
+        const gatewayPromotions = methodPromotions
+          .flatMap((promo) => {
+            if (!promo.promotion_bonuses) return [];
+            return promo.promotion_bonuses
+              .filter(
+                (bonus) =>
+                  bonus.payment_method?._id?.toString() ===
+                    method._id.toString() &&
+                  bonus.payment_method?.gateway?.includes(gateway)
+              )
+              .map((bonus) => ({
+                bn: `${promo.title_bd} (${
+                  bonus.bonus_type === "Percentage"
+                    ? `${bonus.bonus}%`
+                    : `৳${bonus.bonus}`
+                })`,
+                en: `${promo.title} (${
+                  bonus.bonus_type === "Percentage"
+                    ? `${bonus.bonus}%`
+                    : `$${bonus.bonus}`
+                })`,
+                condition: `≥৳${
+                  bonus.bonus_type === "Percentage" ? 100 : bonus.bonus
+                }`,
+                _id: `${promo._id}-${bonus.payment_method._id}-${gateway}`,
+                minAmount: bonus.minAmount || 100,
+                maxAmount: bonus.maxAmount || 10000,
+              }));
+          })
+          .filter(Boolean);
 
-      return { name: gateway, promotions: gatewayPromotions };
-    }) || [];
+        return { name: gateway, promotions: gatewayPromotions };
+      }) || [];
     // Hide Opay when disabled; ensure Opay exists only when enabled
-    const hasOpay = processTabs.some((t) => String(t.name).toLowerCase() === "opay");
+    const hasOpay = processTabs.some(
+      (t) => String(t.name).toLowerCase() === "opay"
+    );
     if (!opayEnabled) {
-      processTabs = processTabs.filter((t) => String(t.name).toLowerCase() !== "opay");
+      processTabs = processTabs.filter(
+        (t) => String(t.name).toLowerCase() !== "opay"
+      );
     } else if (!hasOpay) {
       processTabs = [...processTabs, { name: "Opay", promotions: [] }];
     }
@@ -177,15 +203,84 @@ const TabsWrapper = ({ language }) => {
     return acc;
   }, {});
 
-  // Remove Opay API call from here. All logic will be handled on button click in CommonContent.
   // Loading State
   if (loading) {
     return (
-      <div className="p-8 text-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-red-600 mx-auto"></div>
-        <p className="mt-4 text-lg">
-          {language === "bn" ? "লোড হচ্ছে..." : "Loading..."}
-        </p>
+      <div className="flex flex-col min-h-screen md:min-h-0 lg:flex-row gap-6 px-2 lg:px-6 py-6">
+        {/* Left Sidebar Skeleton */}
+        <div className="lg:w-1/4 grid grid-cols-4 lg:flex lg:flex-col gap-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="backdrop-blur-md bg-white/40 border border-white/60 rounded-lg p-3 flex items-center gap-3 shadow-sm"
+            >
+              <Skeleton
+                height={50}
+                width={50}
+                baseColor="#E5E7EB"
+                highlightColor="#F3F4F6"
+                circle
+              />
+              <Skeleton
+                height={18}
+                width="70%"
+                baseColor="#E5E7EB"
+                highlightColor="#F3F4F6"
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Right Content Skeleton */}
+        <div className="lg:w-3/4 backdrop-blur-xl bg-white/50 rounded-lg shadow-lg border border-white/60 p-6">
+          {/* Header */}
+          <Skeleton
+            height={25}
+            width="40%"
+            baseColor="#E5E7EB"
+            highlightColor="#F3F4F6"
+          />
+
+          <div className="mt-6 space-y-4">
+            <Skeleton
+              height={20}
+              width="80%"
+              baseColor="#E5E7EB"
+              highlightColor="#F3F4F6"
+            />
+            <Skeleton
+              height={20}
+              width="60%"
+              baseColor="#E5E7EB"
+              highlightColor="#F3F4F6"
+            />
+            <Skeleton
+              height={150}
+              width="100%"
+              baseColor="#E5E7EB"
+              highlightColor="#F3F4F6"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 mt-6">
+            {[1, 2, 3].map((i) => (
+              <Skeleton
+                key={i}
+                height={50}
+                baseColor="#E5E7EB"
+                highlightColor="#F3F4F6"
+              />
+            ))}
+          </div>
+
+          <Skeleton
+            className="mt-6"
+            height={45}
+            width="40%"
+            baseColor="#E5E7EB"
+            highlightColor="#F3F4F6"
+          />
+        </div>
       </div>
     );
   }
@@ -225,7 +320,7 @@ const TabsWrapper = ({ language }) => {
             }`}
             onClick={() => {
               setSelectedTab(method._id);
-              setMethodName( method.methodName.toLowerCase() );
+              setMethodName(method.methodName.toLowerCase());
               const availableTabs = (method.gateway || []).filter(
                 (g) => !(String(g).toLowerCase() === "opay" && !opayEnabled)
               );
@@ -242,7 +337,11 @@ const TabsWrapper = ({ language }) => {
               {language === "bn" ? method.methodNameBD : method.methodName}
             </span>
             {selectedTab === method._id && (
-              <img src={checkImage} alt="selected" className="absolute bottom-1 right-1 w-5 h-5" />
+              <img
+                src={checkImage}
+                alt="selected"
+                className="absolute bottom-1 right-1 w-5 h-5"
+              />
             )}
           </div>
         ))}
@@ -262,9 +361,6 @@ const TabsWrapper = ({ language }) => {
               {language === "bn" ? "ডিপোজিট ইতিহাস" : "Deposit History"}
             </span>
           </div>
-
-          
-
         </div>
 
         {/* Mobile Icons */}
@@ -335,7 +431,11 @@ const TabsWrapper = ({ language }) => {
             const base = "px-6 py-3 rounded-lg font-medium transition-all";
             const cls = isOpay
               ? `${base} opay-shimmer ${isSelected ? "selected" : ""}`
-              : `${base} ${isSelected ? "bg-red-100 text-red-700 border-2 border-red-600" : "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"}`;
+              : `${base} ${
+                  isSelected
+                    ? "bg-red-100 text-red-700 border-2 border-red-600"
+                    : "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
+                }`;
             return (
               <button
                 key={tab.name}
@@ -357,7 +457,15 @@ const TabsWrapper = ({ language }) => {
           <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-lg mb-6 hidden">
             <strong>Opay Devices Online:</strong> {opayOnlineCount}
             <br />
-            <span className="text-sm">{opayOnlineCount > 0 ? (language === "bn" ? "Opay device online, deposit korte parben." : "Opay device is online, you can deposit.") : (language === "bn" ? "Kono Opay device online nei, deposit korte parben na." : "No Opay device online, deposit not available.")}</span>
+            <span className="text-sm">
+              {opayOnlineCount > 0
+                ? language === "bn"
+                  ? "Opay device online, deposit korte parben."
+                  : "Opay device is online, you can deposit."
+                : language === "bn"
+                ? "Kono Opay device online nei, deposit korte parben na."
+                : "No Opay device online, deposit not available."}
+            </span>
           </div>
         )}
 
@@ -367,10 +475,10 @@ const TabsWrapper = ({ language }) => {
           methodName={methodName}
           selectedProcessTab={selectedProcessTab}
           selectedPromotion={selectedPromotion}
-          depositPaymentMethods={depositPaymentMethods}  // এটা যোগ করো
+          depositPaymentMethods={depositPaymentMethods} // এটা যোগ করো
           language={language}
           tabsData={tabsData}
-          userId={userId}  // যদি লাগে
+          userId={userId} // যদি লাগে
           selectedTab={selectedTab}
           handlePromotionChange={handlePromotionChange}
           userInputs={tabsData[selectedTab]?.userInputs || []}

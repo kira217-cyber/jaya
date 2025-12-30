@@ -3,6 +3,8 @@ import { AuthContext } from "@/Context/AuthContext";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { X, Eye, EyeOff, Edit2, Trash2 } from "lucide-react";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 const WithdrawTabsWrapper = () => {
   const { language, userId, balance, setBalance } = useContext(AuthContext);
@@ -325,7 +327,85 @@ const WithdrawTabsWrapper = () => {
     (w) => w._id?.toString() === selectedWalletId
   );
 
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (loading)
+    return (
+      <div className="flex flex-col min-h-screen md:min-h-0 lg:flex-row gap-6 px-2 lg:px-6 py-6">
+        {/* Left Sidebar Skeleton */}
+        <div className="lg:w-1/4 grid grid-cols-4 lg:flex lg:flex-col gap-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="backdrop-blur-md bg-white/40 border border-white/60 rounded-lg p-3 flex items-center gap-3 shadow-sm"
+            >
+              <Skeleton
+                height={50}
+                width={50}
+                baseColor="#E5E7EB"
+                highlightColor="#F3F4F6"
+                circle
+              />
+              <Skeleton
+                height={18}
+                width="70%"
+                baseColor="#E5E7EB"
+                highlightColor="#F3F4F6"
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Right Content Skeleton */}
+        <div className="lg:w-3/4 backdrop-blur-xl bg-white/50 rounded-lg shadow-lg border border-white/60 p-6">
+          {/* Header */}
+          <Skeleton
+            height={25}
+            width="40%"
+            baseColor="#E5E7EB"
+            highlightColor="#F3F4F6"
+          />
+
+          <div className="mt-6 space-y-4">
+            <Skeleton
+              height={20}
+              width="80%"
+              baseColor="#E5E7EB"
+              highlightColor="#F3F4F6"
+            />
+            <Skeleton
+              height={20}
+              width="60%"
+              baseColor="#E5E7EB"
+              highlightColor="#F3F4F6"
+            />
+            <Skeleton
+              height={150}
+              width="100%"
+              baseColor="#E5E7EB"
+              highlightColor="#F3F4F6"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 mt-6">
+            {[1, 2, 3].map((i) => (
+              <Skeleton
+                key={i}
+                height={50}
+                baseColor="#E5E7EB"
+                highlightColor="#F3F4F6"
+              />
+            ))}
+          </div>
+
+          <Skeleton
+            className="mt-6"
+            height={45}
+            width="40%"
+            baseColor="#E5E7EB"
+            highlightColor="#F3F4F6"
+          />
+        </div>
+      </div>
+    );
 
   return (
     <>
