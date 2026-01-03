@@ -6,20 +6,13 @@ import "swiper/css/navigation";
 import "swiper/css/grid";
 import { useEffect, useRef, useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-// Use fixed CDN/API base for images
 const IMAGE_BASE = "https://apigames.oracleapi.net";
 import Modal from "@/components/home/modal/Modal";
 import Login from "@/components/shared/login/Login";
 import RegistrationModal from "@/components/shared/login/RegistrationModal";
 import { AuthContext } from "@/Context/AuthContext";
-import logo from "../../../assets/headerLOGO.png";
 
-
-const GameCard = ({
-  title = "HOT GAMES",
-  games = [],
-  parentId = "",
-}) => {
+const GameCard = ({ title = "HOT GAMES", games = [], parentId = "" }) => {
   const swiperRef = useRef(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -28,7 +21,6 @@ const GameCard = ({
   const { user, language } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Translation object
   const t = {
     en: {
       viewAll: "View All",
@@ -103,11 +95,9 @@ const GameCard = ({
       setSelectedGame(game);
       return;
     }
-
     handlePlayClick(game);
   };
 
-  // === FIXED SHINE EFFECT – ONE GLOBAL TIMER, NO DUPLICATES ===
   useEffect(() => {
     if (games.length === 0) return;
 
@@ -120,25 +110,20 @@ const GameCard = ({
       cards.forEach((card) => {
         if (card instanceof HTMLElement) {
           card.classList.remove("shine-animate");
-          // Trigger reflow to restart animation
           void card.offsetWidth;
           card.classList.add("shine-animate");
         }
       });
 
-      // Schedule next shine after 3 seconds
       timeoutId = setTimeout(() => {
         if (!document.hidden) {
-          // Only animate when tab is visible
           animationFrameId = requestAnimationFrame(triggerShine);
         } else {
-          // If tab is hidden, wait and retry when visible again
           timeoutId = setTimeout(triggerShine, 3000);
         }
       }, 3000);
     };
 
-    // Start after 1 second delay to avoid load flicker
     const startDelay = setTimeout(() => {
       triggerShine();
     }, 1000);
@@ -148,11 +133,10 @@ const GameCard = ({
       clearTimeout(timeoutId);
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
-  }, [games.length]); // Only depend on length – prevents restart on reference change
+  }, [games.length]);
 
   return (
     <div className="max-w-5xl mx-auto mb-8 game-card-container relative">
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-4 lg:mb-3 mt-4">
         <h2 className="text-base sm:text-lg lg:text-xl font-bold text-[#10f3c8] uppercase">
           {getTitle()}
@@ -179,9 +163,6 @@ const GameCard = ({
         </div>
       </div>
 
-  
-
-      {/* SWIPER */}
       <Swiper
         modules={[Navigation, Grid]}
         onSwiper={(swiper) => (swiperRef.current = swiper)}
@@ -215,57 +196,27 @@ const GameCard = ({
               }}
               onClick={() => handleCardClick(game)}
             >
-              {/* Shine Layer */}
               <div className="shine-layer"></div>
 
-              {/* Hover Shine */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-[#00ffaa]/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 skew-x-12" />
+              {/* FIXED IMAGE SIZE */}
+              <div className="w-full h-full">
+                <img
+                  src={(() => {
+                    const docs =
+                      game?.apiData?.projectImageDocs ||
+                      game?.projectImageDocs ||
+                      [];
+                    const match = docs.find(
+                      (d) => d?.projectName?.title === "Tk999" && d?.image
+                    );
+                    const imgPath =
+                      match?.image || game?.image || game?.apiData?.image || "";
+                    return imgPath ? `${IMAGE_BASE}/${imgPath}` : "";
+                  })()}
+                  alt={game?.apiData?.name || game?.name || "game"}
+                  className="w-24 h-32 md:w-48 md:h-60 object-cover rounded-xl"
+                />
               </div>
-
-              {(() => {
-                // Prefer Tk999 project image from apiData.projectImageDocs
-                const docs = (game?.apiData?.projectImageDocs || game?.projectImageDocs || []);
-                const match = docs.find(
-                  (d) => d?.projectName?.title === "Tk999" && d?.image
-                );
-                const imgPath = match?.image
-                  || game?.image
-                  || game?.apiData?.image
-                  || "";
-                const src = imgPath
-                  ? `${IMAGE_BASE}/${imgPath}`
-                  : "";
-                return (
-        <>
-        {
-          console.log("Game Image Source:", src)
-        }
-                    <img
-                    src={src}
-                    alt={game?.apiData?.name || game?.name || "game"}
-                    className="w-full h-full object-cover rounded-xl transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
-                  />
-        </>
-                );
-              })()}
-
-              {game.showHeart && (
-                <Link
-                  to={game.heartLink || "#"}
-                  className="absolute top-3 right-3"
-                >
-                  <div className="bg-white/30 backdrop-blur-md rounded-full p-2 hover:bg-white/60 transition-all">
-                    <svg
-                      className="w-6 h-6 text-pink-500"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                    </svg>
-                  </div>
-                </Link>
-              )}
 
               <div className="absolute inset-0 hidden md:flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-500">
                 <button
@@ -283,7 +234,6 @@ const GameCard = ({
         ))}
       </Swiper>
 
-      {/* Mobile Bottom Sheet */}
       {isMobile && selectedGame && (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t-4 border-[#00ffaa] shadow-2xl transition-transform duration-300">
           <div className="flex flex-col p-4">
@@ -293,29 +243,31 @@ const GameCard = ({
             >
               <RxCross2 size={28} />
             </button>
+
             <div className="flex items-center gap-4 mb-4">
-              {(() => {
-                const docs = (selectedGame?.apiData?.projectImageDocs || selectedGame?.projectImageDocs || []);
-                const match = docs.find(
-                  (d) => d?.projectName?.title === "Tk999" && d?.image
-                );
-                const imgPath = match?.image
-                  || selectedGame?.image
-                  || selectedGame?.apiData?.image
-                  || "";
-                const src = imgPath ? `${IMAGE_BASE}/${imgPath}` : "";
-                return (
-                  <img
-                    src={src}
-                    alt={selectedGame?.apiData?.name || selectedGame?.name || "game"}
-                    className="w-24 h-24 rounded-xl shadow-lg border-2 border-[#00ffaa] -mt-12"
-                  />
-                );
-              })()}
+              <img
+                src={(() => {
+                  const docs =
+                    selectedGame?.apiData?.projectImageDocs ||
+                    selectedGame?.projectImageDocs ||
+                    [];
+                  const match = docs.find(
+                    (d) => d?.projectName?.title === "Tk999" && d?.image
+                  );
+                  const imgPath =
+                    match?.image ||
+                    selectedGame?.image ||
+                    selectedGame?.apiData?.image ||
+                    "";
+                  return imgPath ? `${IMAGE_BASE}/${imgPath}` : "";
+                })()}
+                className="w-24 h-24 object-cover rounded-xl shadow-lg border-2 border-[#00ffaa] -mt-12"
+              />
               <h3 className="text-lg font-bold text-gray-800 truncate">
                 {selectedGame?.apiData?.name || selectedGame?.name}
               </h3>
             </div>
+
             <button
               onClick={() => handlePlayClick(selectedGame)}
               className="w-full py-4 bg-gradient-to-r from-[#2563eb] to-[#3b82f6] text-white text-lg font-bold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
@@ -326,7 +278,6 @@ const GameCard = ({
         </div>
       )}
 
-      {/* Modals */}
       <Modal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)}>
         <Login
           onClose={() => setShowLoginModal(false)}
@@ -336,6 +287,7 @@ const GameCard = ({
           }}
         />
       </Modal>
+
       <Modal
         isOpen={showRegisterModal}
         onClose={() => setShowRegisterModal(false)}
@@ -349,7 +301,6 @@ const GameCard = ({
         />
       </Modal>
 
-      {/* SHINE CSS – Perfectly Synced */}
       <style>{`
         .auto-shine {
           position: relative;
@@ -358,12 +309,7 @@ const GameCard = ({
         .shine-layer {
           position: absolute;
           inset: 0;
-          background: linear-gradient(
-            110deg,
-            transparent 30%,
-            white 50%,
-            transparent 70%
-          );
+          background: linear-gradient(110deg, transparent 30%, white 50%, transparent 70%);
           transform: translateX(-150%);
           pointer-events: none;
           border-radius: inherit;
