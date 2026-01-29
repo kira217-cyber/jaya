@@ -337,7 +337,7 @@ const SubmenuPage = () => {
                 <img
                   src={src}
                   alt={game?.apiData?.name || game?.name || "Game"}
-                  className="w-24 h-32 md:w-48 md:h-64 object-cover rounded-lg xl:rounded-xl transition-transform duration-500 group-hover:scale-110 group-hover:blur-[2px]"
+                  className="w-full h-full object-cover rounded-lg xl:rounded-xl transition-transform duration-500 group-hover:scale-110 group-hover:blur-[2px]"
                 />
 
                 {game?.showHeart && (

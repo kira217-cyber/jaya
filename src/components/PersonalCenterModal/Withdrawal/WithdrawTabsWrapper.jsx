@@ -2,7 +2,15 @@ import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "@/Context/AuthContext";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { X, Eye, EyeOff, Edit2, Trash2 } from "lucide-react";
+import {
+  X,
+  Eye,
+  EyeOff,
+  Edit2,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -36,11 +44,17 @@ const WithdrawTabsWrapper = () => {
   });
   const [submitLoading, setSubmitLoading] = useState(false);
 
+  // Turnover states
+  const [activeTurnovers, setActiveTurnovers] = useState([]);
+  const [turnoverLoading, setTurnoverLoading] = useState(true);
+  const [hasUnfinishedTurnover, setHasUnfinishedTurnover] = useState(false);
+  const [showTurnoverModal, setShowTurnoverModal] = useState(false); // New: right slide modal for mobile
+
   // Fetch payment methods
   useEffect(() => {
     axios
       .get(
-        `${import.meta.env.VITE_API_URL}/api/withdraw-payment-methods/methods`
+        `${import.meta.env.VITE_API_URL}/api/withdraw-payment-methods/methods`,
       )
       .then((res) => {
         if (res.data.success) {
@@ -62,7 +76,7 @@ const WithdrawTabsWrapper = () => {
 
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/wallets/${userId}`
+        `${import.meta.env.VITE_API_URL}/api/wallets/${userId}`,
       );
       if (res.data.success) {
         const wallets = res.data.data || [];
@@ -83,13 +97,43 @@ const WithdrawTabsWrapper = () => {
     }
   }, [userId]);
 
+  // Fetch active turnovers
+  const fetchActiveTurnovers = async () => {
+    if (!userId) return;
+
+    setTurnoverLoading(true);
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/withdraw-transaction/my-active-turnovers?userId=${userId}`,
+      );
+      if (res.data.success) {
+        const turnovers = res.data.data || [];
+        setActiveTurnovers(turnovers);
+
+        const unfinished = turnovers.some((t) => t.remainingTurnover > 0);
+        setHasUnfinishedTurnover(unfinished);
+      }
+    } catch (err) {
+      console.error("Turnover fetch error:", err);
+      showNotification("Failed to load turnover status", "error");
+    } finally {
+      setTurnoverLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userId) {
+      fetchActiveTurnovers();
+    }
+  }, [userId]);
+
   // Current method
   const currentMethod = methods.find((m) => m._id === selectedTab) || {};
   const userInputs = currentMethod.userInputs || [];
   const minAmount = currentMethod.minAmount || 200;
   const maxAmount = currentMethod.maxAmount || 30000;
   const hasPasswordField = userInputs.some(
-    (i) => i.name === "transactionPassword"
+    (i) => i.name === "transactionPassword",
   );
 
   // Reset when method changes
@@ -97,7 +141,7 @@ const WithdrawTabsWrapper = () => {
     setSelectedAmount("");
     setTransactionPassword("");
     setInputValues(
-      userInputs.reduce((acc, inp) => ({ ...acc, [inp.name]: "" }), {})
+      userInputs.reduce((acc, inp) => ({ ...acc, [inp.name]: "" }), {}),
     );
   }, [selectedTab]);
 
@@ -105,7 +149,7 @@ const WithdrawTabsWrapper = () => {
   useEffect(() => {
     if (isEditMode && editWalletId) {
       const wallet = registeredWallets.find(
-        (w) => w._id.toString() === editWalletId
+        (w) => w._id.toString() === editWalletId,
       );
       if (wallet) {
         const prefill = {};
@@ -118,7 +162,7 @@ const WithdrawTabsWrapper = () => {
       }
     } else {
       setInputValues(
-        userInputs.reduce((acc, inp) => ({ ...acc, [inp.name]: "" }), {})
+        userInputs.reduce((acc, inp) => ({ ...acc, [inp.name]: "" }), {}),
       );
     }
   }, [isEditMode, editWalletId, registeredWallets]);
@@ -132,7 +176,7 @@ const WithdrawTabsWrapper = () => {
           setShowConfirmModal(false);
           showNotification(
             language === "bn" ? "সময় শেষ হয়েছে!" : "Time expired!",
-            "error"
+            "error",
           );
           return 0;
         }
@@ -152,7 +196,7 @@ const WithdrawTabsWrapper = () => {
     setNotification({ show: true, message, type });
     setTimeout(
       () => setNotification({ show: false, message: "", type: "" }),
-      4000
+      4000,
     );
   };
 
@@ -161,7 +205,7 @@ const WithdrawTabsWrapper = () => {
     setInputValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Save wallet (add or update) — FIXED: type field added
+  // Save wallet (add or update)
   const handleSaveWallet = async () => {
     if (!userId) {
       showNotification("User not found", "error");
@@ -181,7 +225,7 @@ const WithdrawTabsWrapper = () => {
             value: value.trim(),
             label: cfg?.label || "",
             labelBD: cfg?.labelBD || "",
-            type: cfg?.type || "text", // ← এই লাইন যোগ করা হয়েছে
+            type: cfg?.type || "text",
           };
         }),
     };
@@ -191,19 +235,19 @@ const WithdrawTabsWrapper = () => {
       if (isEditMode) {
         res = await axios.put(
           `${import.meta.env.VITE_API_URL}/api/wallets/${editWalletId}`,
-          payload
+          payload,
         );
       } else {
         res = await axios.post(
           `${import.meta.env.VITE_API_URL}/api/wallets`,
-          payload
+          payload,
         );
       }
 
       if (res.data.success) {
         showNotification(
           isEditMode ? "Wallet updated!" : "Wallet added!",
-          "success"
+          "success",
         );
         fetchWallets();
         setOpenModal(false);
@@ -213,7 +257,7 @@ const WithdrawTabsWrapper = () => {
     } catch (err) {
       showNotification(
         err.response?.data?.msg || "Error saving wallet",
-        "error"
+        "error",
       );
     }
   };
@@ -222,16 +266,14 @@ const WithdrawTabsWrapper = () => {
   const handleDeleteWallet = async (walletId) => {
     if (
       !window.confirm(
-        language === "bn" ? "ওয়ালেট মুছে ফেলবেন?" : "Delete this wallet?"
+        language === "bn" ? "ওয়ালেট মুছে ফেলবেন?" : "Delete this wallet?",
       )
     )
       return;
 
     try {
       const res = await axios.delete(
-        `${
-          import.meta.env.VITE_API_URL
-        }/api/wallets/${walletId}?userId=${userId}`
+        `${import.meta.env.VITE_API_URL}/api/wallets/${walletId}?userId=${userId}`,
       );
       if (res.data.success) {
         showNotification("Wallet deleted!", "success");
@@ -265,26 +307,35 @@ const WithdrawTabsWrapper = () => {
       showNotification("Transaction password required");
       return;
     }
+
+    if (hasUnfinishedTurnover) {
+      showNotification(
+        language === "bn"
+          ? "টার্নওভার পূর্ণ করুন প্রথমে!"
+          : "Complete turnover requirements first!",
+        "error",
+      );
+      return;
+    }
+
     setShowConfirmModal(true);
   };
 
-  // Confirm submit — FIXED: type field added in all userInputs
+  // Confirm submit
   const handleConfirmSubmit = async () => {
     setSubmitLoading(true);
     const selectedWallet = registeredWallets.find(
-      (w) => w._id.toString() === selectedWalletId
+      (w) => w._id.toString() === selectedWalletId,
     );
 
-    // Ensure every input has 'type'
     let payloadInputs = selectedWallet.inputs.map((input) => {
       const cfg = userInputs.find((i) => i.name === input.name);
       return {
         ...input,
-        type: cfg?.type || "text", // ← এখানে type যোগ করা হয়েছে
+        type: cfg?.type || "text",
       };
     });
 
-    // Add transaction password with type
     if (hasPasswordField) {
       const cfg = userInputs.find((i) => i.name === "transactionPassword");
       payloadInputs.push({
@@ -292,7 +343,7 @@ const WithdrawTabsWrapper = () => {
         value: transactionPassword.trim(),
         label: cfg?.label || "Transaction Password",
         labelBD: cfg?.labelBD || "ট্রানজেকশন পাসওয়ার্ড",
-        type: cfg?.type || "password", // ← type যোগ করা হয়েছে
+        type: cfg?.type || "password",
       });
     }
 
@@ -307,7 +358,7 @@ const WithdrawTabsWrapper = () => {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/withdraw-transaction/request`,
-        payload
+        payload,
       );
 
       if (res.status >= 200 && res.status < 300) {
@@ -324,13 +375,12 @@ const WithdrawTabsWrapper = () => {
   };
 
   const selectedWallet = registeredWallets.find(
-    (w) => w._id?.toString() === selectedWalletId
+    (w) => w._id?.toString() === selectedWalletId,
   );
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex flex-col min-h-screen md:min-h-0 lg:flex-row gap-6 px-2 lg:px-6 py-6">
-        {/* Left Sidebar Skeleton */}
         <div className="lg:w-1/4 grid grid-cols-4 lg:flex lg:flex-col gap-2">
           {[1, 2, 3, 4, 5].map((i) => (
             <div
@@ -340,9 +390,9 @@ const WithdrawTabsWrapper = () => {
               <Skeleton
                 height={50}
                 width={50}
+                circle
                 baseColor="#E5E7EB"
                 highlightColor="#F3F4F6"
-                circle
               />
               <Skeleton
                 height={18}
@@ -354,16 +404,13 @@ const WithdrawTabsWrapper = () => {
           ))}
         </div>
 
-        {/* Right Content Skeleton */}
         <div className="lg:w-3/4 backdrop-blur-xl bg-white/50 rounded-lg shadow-lg border border-white/60 p-6">
-          {/* Header */}
           <Skeleton
             height={25}
             width="40%"
             baseColor="#E5E7EB"
             highlightColor="#F3F4F6"
           />
-
           <div className="mt-6 space-y-4">
             <Skeleton
               height={20}
@@ -384,7 +431,6 @@ const WithdrawTabsWrapper = () => {
               highlightColor="#F3F4F6"
             />
           </div>
-
           <div className="grid grid-cols-3 gap-4 mt-6">
             {[1, 2, 3].map((i) => (
               <Skeleton
@@ -395,7 +441,6 @@ const WithdrawTabsWrapper = () => {
               />
             ))}
           </div>
-
           <Skeleton
             className="mt-6"
             height={45}
@@ -406,6 +451,7 @@ const WithdrawTabsWrapper = () => {
         </div>
       </div>
     );
+  }
 
   return (
     <>
@@ -419,8 +465,9 @@ const WithdrawTabsWrapper = () => {
         </div>
       )}
 
-      <div className="w-full max-w-4xl min-h-screen md:min-h-0 mx-auto bg-white rounded-xl p-6">
-        <div className="flex flex-wrap gap-4 mb-6">
+      <div className="w-full max-w-4xl min-h-screen md:min-h-0 mx-auto bg-white rounded-xl p-4 sm:p-6 pb-20 md:pb-6 relative">
+        {/* Payment Methods Tabs */}
+        <div className="flex flex-wrap gap-3 mb-6 overflow-x-auto pb-2">
           {methods.map((method) => (
             <div
               key={method._id}
@@ -428,7 +475,7 @@ const WithdrawTabsWrapper = () => {
                 setSelectedTab(method._id);
                 setSelectedProcessTab(method.gateway?.[0] || null);
               }}
-              className={`cursor-pointer border rounded-md px-4 py-2 flex items-center gap-2 transition-all ${
+              className={`cursor-pointer border rounded-md px-4 py-2 flex items-center gap-2 transition-all flex-shrink-0 ${
                 selectedTab === method._id
                   ? "border-red-500 bg-red-50"
                   : "border-gray-300"
@@ -446,16 +493,15 @@ const WithdrawTabsWrapper = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left: Wallet & Form */}
           <div>
             <div className="bg-gray-50 rounded-lg p-6 mb-6">
               {selectedWallet ? (
                 <div className="space-y-4">
                   <div className="flex justify-center">
                     <img
-                      src={`${import.meta.env.VITE_API_URL}${
-                        currentMethod.methodImage
-                      }`}
+                      src={`${import.meta.env.VITE_API_URL}${currentMethod.methodImage}`}
                       alt=""
                       className="w-20 h-20 object-contain"
                     />
@@ -517,7 +563,7 @@ const WithdrawTabsWrapper = () => {
                           w.inputs.find(
                             (i) =>
                               i.name.includes("account") ||
-                              i.name.includes("number")
+                              i.name.includes("number"),
                           )?.value || "Wallet";
                         return (
                           <option key={w._id} value={w._id.toString()}>
@@ -591,46 +637,182 @@ const WithdrawTabsWrapper = () => {
               </div>
             )}
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center">
               <button
                 onClick={handleWithdraw}
                 disabled={
                   !selectedAmount ||
                   registeredWallets.length === 0 ||
-                  submitLoading
+                  submitLoading ||
+                  hasUnfinishedTurnover
                 }
                 className="bg-gray-300 hover:bg-gray-400 disabled:bg-gray-200 disabled:text-gray-500 text-gray-800 px-8 py-3 rounded-full font-bold"
               >
                 {submitLoading ? "Processing..." : "Submit"}
               </button>
-              <p className="text-sm">
+              <p className="text-sm ml-4">
                 Remaining Withdrawal Today:{" "}
                 <span className="text-red-500 font-semibold">99</span>
               </p>
             </div>
           </div>
 
-          <div className="flex justify-end items-start">
-            <div className="bg-orange-50 border border-orange-200 text-orange-600 px-6 py-4 rounded-lg">
+          {/* Right Column - Desktop only */}
+          <div className="hidden lg:block">
+            <div className="bg-orange-50 border border-orange-200 text-orange-600 px-6 py-4 rounded-lg space-y-4">
               Withdrawal Time :<br />
               <span className="font-bold text-lg">24 hours</span>
+              {/* Desktop Turnover List */}
+              <div className="mt-4 pt-4 border-t">
+                <h4 className="font-semibold mb-2">
+                  {language === "bn"
+                    ? "অ্যাকটিভ টার্নওভার"
+                    : "Active Turnovers"}
+                </h4>
+                {turnoverLoading ? (
+                  <Skeleton height={100} />
+                ) : activeTurnovers.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    {language === "bn"
+                      ? "কোনো টার্নওভার নেই"
+                      : "No active turnovers"}
+                  </p>
+                ) : (
+                  <div className="space-y-3 text-sm">
+                    {activeTurnovers.map((t, idx) => (
+                      <div key={idx} className="bg-white p-3 rounded-md border">
+                        <p>
+                          <strong>Required:</strong> ৳
+                          {t.requiredTurnover.toFixed(2)}
+                        </p>
+                        <p>
+                          <strong>Completed:</strong> ৳
+                          {t.completedTurnover.toFixed(2)}
+                        </p>
+                        <p>
+                          <strong>Remaining:</strong> ৳
+                          {t.remainingTurnover.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Activated:{" "}
+                          {new Date(t.activatedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                    {hasUnfinishedTurnover && (
+                      <p className="text-red-500 text-xs mt-2">
+                        {language === "bn"
+                          ? "টার্নওভার পূর্ণ না হলে উইথড্র করতে পারবেন না!"
+                          : "Cannot withdraw until turnover is completed!"}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Overlay */}
-      {(openModal || showConfirmModal) && (
+      {/* ── Mobile Floating Turnover Button ── */}
+      <button
+        onClick={() => setShowTurnoverModal(true)}
+        className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-red-600 to-rose-600 text-white p-4 rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform lg:hidden"
+      >
+        <span className="text-sm font-bold">
+          {language === "bn" ? "টার্নওভার" : "Turnover"}
+        </span>
+      </button>
+
+      {/* ── Mobile Turnover Slide-in Modal ── */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 shadow-2xl transform transition-transform duration-300 overflow-y-auto ${
+          showTurnoverModal ? "translate-x-0" : "translate-x-full"
+        } lg:hidden`}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h3 className="font-bold text-lg">
+            {language === "bn" ? "অ্যাকটিভ টার্নওভার" : "Active Turnovers"}
+          </h3>
+          <X
+            className="cursor-pointer text-gray-600 hover:text-gray-800"
+            size={28}
+            onClick={() => setShowTurnoverModal(false)}
+          />
+        </div>
+
+        <div className="p-6">
+          {turnoverLoading ? (
+            <Skeleton height={120} count={2} />
+          ) : activeTurnovers.length === 0 ? (
+            <p className="text-center text-gray-500 py-10">
+              {language === "bn"
+                ? "কোনো অ্যাকটিভ টার্নওভার নেই"
+                : "No active turnovers"}
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {activeTurnovers.map((t, idx) => (
+                <div key={idx} className="bg-gray-50 p-4 rounded-lg border">
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <span className="text-gray-600 block text-xs">
+                        Required
+                      </span>
+                      <p className="font-bold">
+                        ৳{t.requiredTurnover.toFixed(2)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600 block text-xs">
+                        Completed
+                      </span>
+                      <p className="font-bold">
+                        ৳{t.completedTurnover.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mb-2">
+                    <span className="text-gray-600 block text-xs">
+                      Remaining
+                    </span>
+                    <p className="font-bold text-red-600 text-lg">
+                      ৳{t.remainingTurnover.toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Activated: {new Date(t.activatedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+
+              {hasUnfinishedTurnover && (
+                <div className="bg-red-50 border border-red-200 p-4 rounded-lg mt-4">
+                  <p className="text-red-700 text-sm font-medium text-center">
+                    {language === "bn"
+                      ? "টার্নওভার পূর্ণ না হলে উইথড্র করতে পারবেন না!"
+                      : "Cannot withdraw until turnover is completed!"}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Overlay for all modals */}
+      {(openModal || showConfirmModal || showTurnoverModal) && (
         <div
-          className="fixed inset-0 bg-black/40 z-40"
+          className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
           onClick={() => {
             setOpenModal(false);
             setShowConfirmModal(false);
+            setShowTurnoverModal(false);
           }}
         />
       )}
 
-      {/* Bind/Edit Modal */}
+      {/* Bind/Edit Wallet Modal */}
       <div
         className={`fixed top-0 right-0 h-full w-full max-w-md bg-white z-50 shadow-2xl transform transition-transform duration-300 ${
           openModal ? "translate-x-0" : "translate-x-full"
@@ -793,8 +975,8 @@ const WithdrawTabsWrapper = () => {
                 {submitLoading
                   ? "Submitting..."
                   : language === "bn"
-                  ? "নিশ্চিত করুন"
-                  : "Confirm"}
+                    ? "নিশ্চিত করুন"
+                    : "Confirm"}
               </button>
             </div>
           </div>

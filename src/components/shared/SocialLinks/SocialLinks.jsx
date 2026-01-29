@@ -1,4 +1,4 @@
-// src/components/SocialLinks.jsx
+// src/components/shared/SocialLinks/SocialLinks.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -10,9 +10,8 @@ const SocialLinks = () => {
     const fetchLinks = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/social-links`
+          `${import.meta.env.VITE_API_URL}/api/social-links`,
         );
-        // অর্ডার অনুযায়ী দেখানোর জন্য (যেভাবে অ্যাডমিনে যোগ করা হয়েছে)
         setSocialLinks(res.data);
         setLoading(false);
       } catch (err) {
@@ -23,46 +22,34 @@ const SocialLinks = () => {
     fetchLinks();
   }, []);
 
-  // লোডিং এর সময় কিছু না দেখাক (যাতে ফ্লিকার না করে)
-  if (loading) return null;
-
-  // যদি কোনো লিংক না থাকে তাহলে কিছু দেখাবে না
-  if (!socialLinks || socialLinks.length === 0) return null;
-
-  // প্রতিটি লিংকের জন্য ডাইনামিক পজিশন
-  const positions = [
-    "-100px",  // প্রথমটা (যেমন: Telephone)
-    "-140px",  // দ্বিতীয়টা (Telegram)
-    "-180px",  // তৃতীয়টা (Facebook)
-    "-220px",  // চতুর্থটা (WhatsApp)
-    "-260px",  // পঞ্চমটা (যদি আরো যোগ করেন)
-    "-300px",
-    "-340px",
-  ];
+  if (loading || !socialLinks || socialLinks.length === 0) return null;
 
   return (
-    <div>
-      {socialLinks.map((link, index) => (
-        <div
+    <div className="fixed right-3 bottom-0 md:top-[60%] -translate-y-1/2 z-[999] flex flex-col items-center gap-4 md:gap-5">
+      {socialLinks.map((link) => (
+        <a
           key={link._id}
-          className="absolute right-2 transform -translate-y-1/2 z-50"
-          style={{
-            top: positions[index] || `calc(-100px - ${index * 60}px)`, // বেশি হলে অটো স্পেসিং
-          }}
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="
+            block transform transition-all duration-300 
+            hover:scale-125 active:scale-110
+            focus:outline-none focus:ring-2 focus:ring-emerald-400/50 rounded-full
+          "
+          title={link.name}
         >
-          <a
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block transition-all duration-300 hover:scale-125"
-          >
-            <img
-              src={link.icon}
-              alt={link.name}
-              className="w-10 h-10 object-contain drop-shadow-lg"
-            />
-          </a>
-        </div>
+          <img
+            src={link.icon}
+            alt={link.name}
+            className="
+              w-12 h-12 md:w-16 md:h-16 
+              object-contain 
+              drop-shadow-xl 
+              rounded-full
+            "
+          />
+        </a>
       ))}
     </div>
   );

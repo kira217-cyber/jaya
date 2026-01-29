@@ -214,7 +214,7 @@ const GameCard = ({ title = "HOT GAMES", games = [], parentId = "" }) => {
                     return imgPath ? `${IMAGE_BASE}/${imgPath}` : "";
                   })()}
                   alt={game?.apiData?.name || game?.name || "game"}
-                  className="w-24 h-32 md:w-48 md:h-60 object-cover rounded-xl"
+                  className="w-full h-full object-cover rounded-xl"
                 />
               </div>
 

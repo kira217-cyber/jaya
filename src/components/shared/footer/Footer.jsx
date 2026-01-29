@@ -112,7 +112,7 @@ const Footer = () => {
           {/* Mobile Buttons */}
           <div className="flex flex-wrap gap-2 w-full justify-center mb-6 lg:hidden">
             <Link
-              to="https://aff.cb66.online"
+              to="https://aff.bajigo.live"
               target="_blank"
               rel="noreferrer"
               className="flex-1 mb-3 min-w-[120px] flex items-center justify-center cursor-pointer px-4 py-2 text-lg font-bold rounded-md bg-[#025659] text-[#FCCF00] hover:bg-yellow-400 hover:text-yellow-700 transition-all"
@@ -220,14 +220,14 @@ const Footer = () => {
               <p className="text-[12px] md:text-base mb-4 text-[#e0fff7]">
                 {language === "bn" ? (
                   <>
-                    CB66 ওয়েবসাইটটি কোম্পানি দ্বারা পরিচালিত হয়, লাইসেন্স
+                    Bajigo ওয়েবসাইটটি কোম্পানি দ্বারা পরিচালিত হয়, লাইসেন্স
                     নম্বর GLH-OCCHKTW079780120 এর অধীনে এবং Gaming Services
                     Provider N.V. দ্বারা নিয়ন্ত্রিত। কুরাসাও সরকার কর্তৃক
                     অনুমোদিত, লাইসেন্স নম্বর 375/JAZ।
                   </>
                 ) : (
                   <>
-                    CB66 website is operated by company, under license number
+                    Bajigo website is operated by company, under license number
                     GLH-OCCHKTW079780120 issued to it and regulated by Gaming
                     Services Provider N.V., authorized by the Government of
                     Curaçao under license number 375/JAZ.
@@ -238,7 +238,7 @@ const Footer = () => {
 
             <div className="border-b border-teal-300 flex flex-wrap justify-center md:justify-start gap-2 pb-4 mb-4">
               <Link
-                to="https://aff.cb66.online"
+                to="https://aff.bajigo.live"
                 target="_blank"
                 rel="noreferrer"
                 className="py-1 px-4 text-lg rounded-md text-yellow-400 bg-teal-700 hidden md:block"

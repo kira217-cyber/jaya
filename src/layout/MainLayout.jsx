@@ -196,6 +196,8 @@ const MainLayout = () => {
         <div className="flex-1 pt-14 sm:pt-[70px] lg:pt-20 lg:w-[83px] xl:w-[86%] w-full">
           <Outlet />
           <Footer />
+          {/* Social Icons (unchanged) */}
+          <SocialLinks></SocialLinks>
         </div>
       </div>
 
@@ -215,9 +217,6 @@ const MainLayout = () => {
             </div>
           </Link>
         ))}
-
-        {/* Social Icons (unchanged) */}
-        <SocialLinks></SocialLinks>
       </div>
     </div>
   );
