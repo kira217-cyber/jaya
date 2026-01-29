@@ -1,12 +1,7 @@
 // src/components/login/Login.jsx
-import { useState, useContext } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-// import { AuthContext } from "@/context/AuthContext";
 import toast from "react-hot-toast";
-
-import bannerImg from "../../../assets/login_page_image.png";
-import logo from "../../../assets/22221.png";
-
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { AuthContext } from "@/Context/AuthContext";
 
@@ -17,9 +12,42 @@ const Login = ({ onClose, onRegisterClick }) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [bannerUrl, setBannerUrl] = useState(null);
+  const [fetchingBanner, setFetchingBanner] = useState(true);
 
   const { setUser } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // Fetch login banner
+  useEffect(() => {
+    const fetchBanner = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_BACKEND_API}api/v1/admin/bannersRegistration`,
+        );
+        const data = await res.json();
+
+        if (data.success && data.data) {
+          const loginBanner = data.data.find(
+            (item) => item.type === "login_banner",
+          );
+          if (loginBanner && loginBanner.url) {
+            // Adjust BASE_IMAGE_URL to match your backend image serving path
+            const BASE_IMAGE_URL = `${import.meta.env.VITE_BACKEND_API}uploads/`; // ← CHANGE THIS if needed (e.g. /uploads/)
+            setBannerUrl(BASE_IMAGE_URL + loginBanner.url);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load login banner:", err);
+        // You can set a fallback image here if you want
+        // setBannerUrl("/path/to/fallback.jpg");
+      } finally {
+        setFetchingBanner(false);
+      }
+    };
+
+    fetchBanner();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,7 +67,6 @@ const Login = ({ onClose, onRegisterClick }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
@@ -48,14 +75,11 @@ const Login = ({ onClose, onRegisterClick }) => {
 
       localStorage.setItem("userId", data.user.id);
       localStorage.setItem("user", JSON.stringify(data.user));
-
       setUser(data.user);
       toast.success(`Welcome, ${data.user.username}!`);
-
       onClose();
       navigate("/");
 
-      // Force reload so authenticated state reflects immediately across the app
       setTimeout(() => {
         window.location.reload();
       }, 200);
@@ -71,7 +95,7 @@ const Login = ({ onClose, onRegisterClick }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="relative w-[95%] max-w-[900px] h-[600px] rounded-2xl overflow-hidden shadow-2xl bg-[#053a40] flex">
-        {/* ❌ Close */}
+        {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-yellow-400 text-black font-bold hover:bg-yellow-300"
@@ -79,20 +103,27 @@ const Login = ({ onClose, onRegisterClick }) => {
           ✕
         </button>
 
-        {/* LEFT BANNER */}
-        <div className="hidden md:block w-1/2 relative">
-          <img
-            src={bannerImg}
-            alt="banner"
-            className="w-full h-full"
-          />
-
-         
+        {/* LEFT BANNER - dynamic */}
+        <div className="hidden md:block w-1/2 relative bg-gray-800">
+          {fetchingBanner ? (
+            <div className="w-full h-full flex items-center justify-center text-white">
+              Loading banner...
+            </div>
+          ) : bannerUrl ? (
+            <img
+              src={bannerUrl}
+              alt="Login banner"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-white/60">
+              No banner available
+            </div>
+          )}
         </div>
 
         {/* RIGHT FORM */}
         <div className="w-full md:w-1/2 p-8 text-white flex flex-col justify-center">
-          {/* Header */}
           <h2 className="text-3xl font-bold text-yellow-400 mb-2">Login</h2>
           <p className="text-sm mb-6">
             No account yet?{" "}
@@ -107,18 +138,13 @@ const Login = ({ onClose, onRegisterClick }) => {
             </span>
           </p>
 
-          <img src={logo} alt="logo" className="w-20 mx-auto mb-4" />
-
-          {/* Error */}
           {error && (
             <div className="mb-4 text-sm bg-red-500/20 text-red-300 p-2 rounded text-center">
               {error}
             </div>
           )}
 
-          {/* FORM */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username */}
             <input
               type="text"
               placeholder="username"
@@ -128,7 +154,6 @@ const Login = ({ onClose, onRegisterClick }) => {
               className="w-full px-4 py-3 rounded-lg bg-[#0b2f34] border border-[#1aa6a6] focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
 
-            {/* Password */}
             <div className="relative">
               <input
                 type={showPass ? "text" : "password"}
@@ -146,7 +171,6 @@ const Login = ({ onClose, onRegisterClick }) => {
               </span>
             </div>
 
-            {/* Remember / Forgot */}
             <div className="flex justify-between items-center text-sm">
               <label className="flex items-center gap-2">
                 <input
@@ -161,7 +185,6 @@ const Login = ({ onClose, onRegisterClick }) => {
               </span>
             </div>
 
-            {/* LOGIN BUTTON */}
             <button
               type="submit"
               disabled={loading}
@@ -175,7 +198,6 @@ const Login = ({ onClose, onRegisterClick }) => {
             </button>
           </form>
 
-          {/* Social */}
           <div className="mt-6">
             <p className="text-center text-sm mb-3">or connect with</p>
             <div className="flex gap-4">

@@ -144,19 +144,19 @@ const GameCard = ({ title = "HOT GAMES", games = [], parentId = "" }) => {
         <div className="flex items-center gap-2">
           <Link
             to={`/submenu/${parentId}`}
-            className="px-2 py-1 text-sm font-bold rounded-lg bg-gradient-to-b from-[#0f727c] to-[#004e56] border-2 border-[#00a97a] text-[#ffe600] hover:bg-yellow-400 hover:text-white transition-all shadow-lg"
+            className="px-3 py-1.5 text-sm font-bold rounded-lg bg-gradient-to-b from-[#0f727c] to-[#004e56] border-2 border-[#00a97a] text-[#ffe600] hover:bg-yellow-400 hover:text-white transition-all shadow-lg"
           >
             {translate("viewAll")}
           </Link>
           <button
             onClick={slidePrev}
-            className="p-1 rounded-lg bg-[#003840]/80 hover:bg-[#00ffaa]/20 border border-[#00ffaa]/30 text-white transition-all"
+            className="p-1.5 rounded-lg bg-[#003840]/80 hover:bg-[#00ffaa]/20 border border-[#00ffaa]/30 text-white transition-all"
           >
             <RxCaretLeft size={20} />
           </button>
           <button
             onClick={slideNext}
-            className="p-1 rounded-lg bg-[#003840]/80 hover:bg-[#00ffaa]/20 border border-[#00ffaa]/30 text-white transition-all"
+            className="p-1.5 rounded-lg bg-[#003840]/80 hover:bg-[#00ffaa]/20 border border-[#00ffaa]/30 text-white transition-all"
           >
             <RxCaretRight size={20} />
           </button>

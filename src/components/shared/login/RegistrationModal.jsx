@@ -2,11 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useContext } from "react";
 import toast from "react-hot-toast";
-
-import bannerImg from "../../../assets/login_page_image.png";
-import logo from "../../../assets/22221.png";
-
-import { FaFacebookF, FaGoogle } from "react-icons/fa";
+import { FaFacebookF, FaGoogle, FaEye, FaEyeSlash } from "react-icons/fa";
 import { AuthContext } from "@/Context/AuthContext";
 
 const RegistrationModal = ({ onClose, openLogin, initialReferral }) => {
@@ -17,15 +13,40 @@ const RegistrationModal = ({ onClose, openLogin, initialReferral }) => {
   const [referralCode, setReferralCode] = useState("");
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [bannerUrl, setBannerUrl] = useState(null);
+  const [fetchingBanner, setFetchingBanner] = useState(true);
 
   const { setUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  // Fetch registration banner
   useEffect(() => {
-    if (initialReferral) {
-      setReferralCode(initialReferral);
-    }
-  }, [initialReferral]);
+    const fetchBanner = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_API}api/v1/admin/bannersRegistration`);
+        const data = await res.json();
+
+        if (data.success && data.data) {
+          const regBanner = data.data.find(item => item.type === "registration_banner");
+          if (regBanner && regBanner.url) {
+            // Adjust BASE_IMAGE_URL to match your backend image serving path
+            const BASE_IMAGE_URL = `${import.meta.env.VITE_BACKEND_API}uploads/`; // ← CHANGE THIS if needed
+            setBannerUrl(BASE_IMAGE_URL + regBanner.url);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load registration banner:", err);
+        // Optional: set fallback
+        // setBannerUrl("/fallback-reg.jpg");
+      } finally {
+        setFetchingBanner(false);
+      }
+    };
+
+    fetchBanner();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,20 +74,16 @@ const RegistrationModal = ({ onClose, openLogin, initialReferral }) => {
     }
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/main/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username,
-            email: `${username}@temp.com`,
-            whatsapp,
-            password,
-            referral: referralCode || undefined,
-          }),
-        }
-      );
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/main/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          whatsapp,
+          password,
+          referral: referralCode || undefined,
+        }),
+      });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -74,11 +91,14 @@ const RegistrationModal = ({ onClose, openLogin, initialReferral }) => {
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("userId", data.user.id);
       setUser(data.user);
-
       toast.success(`Welcome ${data.user.username}`);
       onClose();
 
-      data.user.role === "user" ? navigate("/") : navigate("/pending-approval");
+      if (data.user.role === "user") {
+        navigate("/");
+      } else {
+        navigate("/pending-approval");
+      }
     } catch (err) {
       toast.error(err.message || "Registration failed");
     } finally {
@@ -97,9 +117,23 @@ const RegistrationModal = ({ onClose, openLogin, initialReferral }) => {
           ✕
         </button>
 
-        {/* LEFT BANNER */}
-        <div className="hidden md:block w-1/2 relative">
-          <img src={bannerImg} alt="banner" className="w-full h-full object-cover" />
+        {/* LEFT BANNER - dynamic */}
+        <div className="hidden md:block w-1/2 relative bg-gray-800">
+          {fetchingBanner ? (
+            <div className="w-full h-full flex items-center justify-center text-white">
+              Loading banner...
+            </div>
+          ) : bannerUrl ? (
+            <img
+              src={bannerUrl}
+              alt="Registration banner"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-white/60">
+              No banner available
+            </div>
+          )}
         </div>
 
         {/* RIGHT FORM */}
@@ -118,20 +152,16 @@ const RegistrationModal = ({ onClose, openLogin, initialReferral }) => {
             </span>
           </p>
 
-          <img src={logo} alt="logo" className="w-20 mx-auto mb-4" />
-
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Phone */}
             <input
               type="text"
-              placeholder="Phone number"
+              placeholder="Phone number (WhatsApp)"
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
               disabled={loading}
               className="w-full px-4 py-3 rounded-lg bg-[#0b2f34] border border-[#1aa6a6] focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
 
-            {/* Username */}
             <input
               type="text"
               placeholder="Username"
@@ -141,27 +171,42 @@ const RegistrationModal = ({ onClose, openLogin, initialReferral }) => {
               className="w-full px-4 py-3 rounded-lg bg-[#0b2f34] border border-[#1aa6a6] focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
 
-            {/* Password */}
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              className="w-full px-4 py-3 rounded-lg bg-[#0b2f34] border border-[#1aa6a6] focus:outline-none focus:ring-2 focus:ring-teal-400"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-lg bg-[#0b2f34] border border-[#1aa6a6] focus:outline-none focus:ring-2 focus:ring-teal-400"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
 
-            {/* Confirm Password */}
-            <input
-              type="password"
-              placeholder="Confirm Password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={loading}
-              className="w-full px-4 py-3 rounded-lg bg-[#0b2f34] border border-[#1aa6a6] focus:outline-none focus:ring-2 focus:ring-teal-400"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-lg bg-[#0b2f34] border border-[#1aa6a6] focus:outline-none focus:ring-2 focus:ring-teal-400"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
 
-            {/* Referral */}
             <input
               type="text"
               placeholder="Referral code (optional)"
@@ -172,7 +217,6 @@ const RegistrationModal = ({ onClose, openLogin, initialReferral }) => {
               className="w-full px-4 py-3 rounded-lg bg-[#0b2f34] border border-[#1aa6a6] focus:outline-none focus:ring-2 focus:ring-teal-400"
             />
 
-            {/* Agree */}
             <label className="flex items-center gap-2 text-sm mt-2">
               <input
                 type="checkbox"
@@ -183,7 +227,6 @@ const RegistrationModal = ({ onClose, openLogin, initialReferral }) => {
               I am 18 years old and agree to Terms of Use
             </label>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -197,7 +240,6 @@ const RegistrationModal = ({ onClose, openLogin, initialReferral }) => {
             </button>
           </form>
 
-          {/* Social */}
           <div className="mt-6">
             <p className="text-center text-sm mb-3">or connect with</p>
             <div className="flex gap-4">

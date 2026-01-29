@@ -67,7 +67,7 @@ const MarqueeSlider = () => {
   const topMarginClass = user ? "mt-5" : "mt-20";
 
   return (
-    <div className={`relative ${topMarginClass} mb-2 bg-[#002f2f] rounded-full shadow-md w-full max-w-5xl mx-auto my-2 lg:my-4 pr-4 py-1.5 md:py-2 overflow-hidden`}>
+    <div className={`relative ${topMarginClass} mb-2 bg-[#002f2f] border-[1px] border-[#046e54] rounded-full shadow-[0_20px_40px_rgba(0,0,0,0.5)] w-full max-w-5xl mx-auto my-2 lg:my-4 pr-4 py-1.5 md:py-1.5 overflow-hidden`}>
       {/* Dynamic Emoji */}
       <div
         className="absolute px-2 top-1/2 -translate-y-1/2 text-base lg:text-xl bg-[#002f2f]"
@@ -79,7 +79,7 @@ const MarqueeSlider = () => {
       {/* Scrolling Marquee Text */}
       <Link
         to="/promotions"
-        className="block whitespace-nowrap text-xs sm:text-base font-medium animate-marquee hover:[animation-play-state:paused] cursor-pointer pl-10"
+        className="block font-bold whitespace-nowrap text-xs sm:text-base animate-marquee hover:[animation-play-state:paused] cursor-pointer pl-10"
         style={{ color: secondaryColor }}
       >
         {emoji} {displayText}

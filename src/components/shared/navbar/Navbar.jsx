@@ -16,10 +16,9 @@ import { FiUser } from "react-icons/fi";
 import { MdLogout } from "react-icons/md";
 import { MdOutlineInsertChart } from "react-icons/md";
 import PersonalCenterModal from "@/pages/PersonalCenterModal";
-import logo from "../../../assets/headerLOGO.png";
+import logo from "../../../assets/headerLOGO.png"; // fallback logo
 import PromoBanner from "@/components/shared/appBanner/AppBanner";
 import { AuthContext } from "@/Context/AuthContext";
-// import { AuthContext } from "@/context/AuthContext";
 
 const Navbar = ({ onMenuClick, isSidebarOpen }) => {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -28,11 +27,21 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const { user, balance, logout, isBalanceLoading, refreshBalance, language,setIsInformationModalOpen ,isInformationModalOpen} =
-    useContext(AuthContext);
+  const {
+    user,
+    balance,
+    logout,
+    isBalanceLoading,
+    refreshBalance,
+    adminHomeControl, // ← Now available from context
+    language,
+    setIsInformationModalOpen,
+    isInformationModalOpen,
+  } = useContext(AuthContext);
 
   const [isHovering, setIsHovering] = useState(false);
-  // const [isInformationModalOpen, setIsInformationModalOpen] = useState(false);
+
+  console.log("Admin Home Control in Navbar:", adminHomeControl);
 
   // Referral from URL
   useEffect(() => {
@@ -141,7 +150,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
       <div className="bg-[#00352f] fixed top-0 left-0 w-full z-50 shadow-md">
         <PromoBanner />
         <div className="flex justify-between items-center px-3 sm:px-4 py-2 sm:py-2.5 gap-2 border-b-2 border-[#075a51]">
-          {/* Left: Menu + Logo */}
+          {/* Left: Menu + Logo (Dynamic from adminHomeControl) */}
           <div className="flex items-center gap-2 sm:gap-5 md:gap-8 text-lg">
             <button
               className="p-2 text-white outline-none"
@@ -153,11 +162,16 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
                 }`}
               />
             </button>
+
             <Link to="/">
               <img
                 className="w-20 sm:w-20 md:w-30 xl:w-40 2xl:w-40"
-                src={logo}
-                alt="Logo"
+                src={
+                  adminHomeControl?.websiteLogoWhite
+                    ? `${import.meta.env.VITE_BACKEND_API}uploads/${adminHomeControl.websiteLogoWhite}`
+                    : logo // fallback to your static import
+                }
+                alt="Website Logo"
               />
             </Link>
           </div>
@@ -255,30 +269,30 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
             ) : (
               /* ========== LOGIN / REGISTER BUTTONS (MOBILE & DESKTOP) ========== */
               <div className="flex gap-2">
-                {/* LOGIN BUTTON - Mobile Small */}
+                {/* LOGIN BUTTON */}
                 <div
                   onClick={() => setShowLoginModal(true)}
                   className="flex items-center justify-center cursor-pointer 
-             min-w-[80px] w-[80px] h-8 px-2 
-             text-sm font-bold text-yellow-400 
-             bg-gradient-to-b from-[#0f727c] to-[#004e56] 
-             border border-[#11aa7d] rounded-lg 
-             shadow-md hover:shadow-lg transition-shadow 
-             md:min-w-[100px] md:w-auto md:h-10 md:px-3 md:text-base"
+                    min-w-[80px] w-[80px] h-8 px-2 
+                    text-sm font-bold text-yellow-400 
+                    bg-gradient-to-b from-[#0f727c] to-[#004e56] 
+                    border border-[#11aa7d] rounded-lg 
+                    shadow-md hover:shadow-lg transition-shadow 
+                    md:min-w-[100px] md:w-auto md:h-10 md:px-3 md:text-base"
                 >
                   {translate("Login")}
                 </div>
 
-                {/* REGISTER BUTTON - Mobile Small */}
+                {/* REGISTER BUTTON */}
                 <div
                   onClick={() => setShowRegisterModal(true)}
                   className="flex items-center justify-center cursor-pointer 
-             min-w-[80px] w-[80px] h-8 px-2 
-             text-sm font-bold text-orange-600 
-             bg-gradient-to-b from-[#ffe600] to-[#ffb800] 
-             border border-[#fff2a6] rounded-xl 
-             shadow-inner shadow-[#fff2a6] hover:shadow-xl transition-shadow 
-             md:min-w-[100px] md:w-auto md:h-10 md:px-3 md:text-base"
+                    min-w-[80px] w-[80px] h-8 px-2 
+                    text-sm font-bold text-orange-600 
+                    bg-gradient-to-b from-[#ffe600] to-[#ffb800] 
+                    border border-[#fff2a6] rounded-xl 
+                    shadow-inner shadow-[#fff2a6] hover:shadow-xl transition-shadow 
+                    md:min-w-[100px] md:w-auto md:h-10 md:px-3 md:text-base"
                 >
                   {translate("Register")}
                 </div>

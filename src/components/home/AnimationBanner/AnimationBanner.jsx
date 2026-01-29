@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useContext } from "react";
 import { baseURL, baseURL_For_IMG_UPLOAD } from "@/utils/baseURL";
 // Use fixed CDN/API base for game images
 const IMAGE_BASE = "https://apigames.oracleapi.net";
@@ -6,23 +6,26 @@ import { Link } from "react-router-dom";
 import Modal from "@/components/home/modal/Modal";
 import Login from "@/components/shared/login/Login";
 import RegistrationModal from "@/components/shared/login/RegistrationModal";
-import { useSelector } from "react-redux";
+import { AuthContext } from "@/Context/AuthContext";
 
 export default function AnimationBanner({ data }) {
   const [gamesData, setGamesData] = useState([]);
   const [counter, setCounter] = useState(123456789); // Initial number
-  // Animation state previously used for styling; no longer needed
   const reelRefs = useRef([]); // Refs for each reel
+
   const [bannerData, setBannerData] = useState({
     titleBD: "জ্যাকপট",
+    titleEN: "JACKPOT",
     titleColor: "#FFFF00",
     bannerBackgroundColor: "#012632",
     numberBackgroundColor: "#FFFFFF",
     numberColor: "#000000",
   });
+
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const { user } = useSelector((state) => state.auth);
+
+  const { language, user } = useContext(AuthContext);
 
   // Fetch AnimationBanner data from backend
   useEffect(() => {
@@ -33,8 +36,10 @@ export default function AnimationBanner({ data }) {
           throw new Error("Failed to fetch AnimationBanner data");
         }
         const data = await response.json();
+
         setBannerData({
           titleBD: data.titleBD || "জ্যাকপট",
+          titleEN: data.titleEN || "JACKPOT", // assuming backend may send english too
           titleColor: data.titleColor || "#FFFF00",
           bannerBackgroundColor: data.bannerBackgroundColor || "#012632",
           numberBackgroundColor: data.numberBackgroundColor || "#FFFFFF",
@@ -44,6 +49,7 @@ export default function AnimationBanner({ data }) {
         console.error("Error fetching AnimationBanner:", error.message);
         setBannerData({
           titleBD: "জ্যাকপট",
+          titleEN: "JACKPOT",
           titleColor: "#FFFF00",
           bannerBackgroundColor: "#012632",
           numberBackgroundColor: "#FFFFFF",
@@ -68,15 +74,13 @@ export default function AnimationBanner({ data }) {
   // Animation control
   useEffect(() => {
     const digitCount = 9; // Number of digits in counter
-    reelRefs.current = reelRefs.current.slice(0, digitCount); // Initialize refs
+    reelRefs.current = reelRefs.current.slice(0, digitCount);
 
     const generateRandomNumber = () => {
-      // Generate a random 9-digit number (100000000 to 999999999)
       return Math.floor(100000000 + Math.random() * 900000000);
     };
 
     const animateReels = () => {
-      // Fast spin for 2 seconds
       reelRefs.current.forEach((reel, index) => {
         if (reel) {
           reel.style.animation = `scroll${
@@ -85,25 +89,22 @@ export default function AnimationBanner({ data }) {
         }
       });
 
-      // Slow down and stop after 2 seconds
       const slowTimeout = setTimeout(() => {
         const digits = counter.toString().padStart(9, "0").split("");
         reelRefs.current.forEach((reel, index) => {
           if (reel) {
             const targetDigit = parseInt(digits[index]);
-            // Each digit occupies 10% of reel height (0-9 in first half)
             const offset = (targetDigit * 10) % 100;
             reel.style.animation = `slowDown 3s ease-out forwards`;
             reel.style.setProperty("--stop-position", `-${offset}%`);
           }
         });
 
-        // Update counter with a new random number and restart after stopping
         setTimeout(() => {
           setCounter(generateRandomNumber());
-          animateReels(); // Restart cycle
-        }, 5000); // Slow down duration
-      }, 1000); // Fast spin duration
+          animateReels();
+        }, 5000);
+      }, 1000);
 
       return () => clearTimeout(slowTimeout);
     };
@@ -139,7 +140,6 @@ export default function AnimationBanner({ data }) {
     ];
   };
 
-  // Digits for the reel (0-9, repeated)
   const reelDigits = [
     "0",
     "1",
@@ -163,6 +163,10 @@ export default function AnimationBanner({ data }) {
     "9",
   ];
 
+  // Decide title based on current language
+  const displayTitle =
+    language === "bn" ? bannerData.titleBD : bannerData.titleEN;
+
   return (
     <div
       className="h-full w-full max-w-5xl mx-auto rounded-xl overflow-hidden flex flex-col md:grid md:grid-cols-12 banner-container"
@@ -183,16 +187,19 @@ export default function AnimationBanner({ data }) {
           className="col-span-12 text-right text-5xl md:text-6xl flex items-end justify-end h-full mr-8"
           style={{
             color: bannerData.titleColor,
-            fontFamily: "'Kalpurush', Arial, sans-serif",
+            fontFamily:
+              language === "bn"
+                ? "'Kalpurush', Arial, sans-serif"
+                : "system-ui, sans-serif",
           }}
         >
-          {bannerData.titleBD}
+          {displayTitle}
         </p>
+
         <div className="col-span-12 flex justify-center items-center h-full relative overflow-hidden">
           <div className="odometer flex justify-center items-center gap-[8px] p-[10px_14px] rounded-[14px] bg-[#0b1222] shadow-[0_0_25px_rgba(242,15,91,0.25),0_0_40px_rgba(255,180,0,0.15)]">
             {formatCounter(counter).map((text, index) => {
-              // Determine digit index for reel mapping
-              const digitIndex = Math.floor((index - 1) / 2); // Map to digit position
+              const digitIndex = Math.floor((index - 1) / 2);
               return (
                 <span key={index} className="inline-flex items-center">
                   {text === "৳" || text === "," ? (
@@ -283,14 +290,15 @@ export default function AnimationBanner({ data }) {
                 className="relative group overflow-hidden rounded-lg shadow-md w-[130px] h-[176px] flex-shrink-0 mx-1"
               >
                 {(() => {
-                  const docs = (game?.apiData?.projectImageDocs || game?.projectImageDocs || []);
+                  const docs =
+                    game?.apiData?.projectImageDocs ||
+                    game?.projectImageDocs ||
+                    [];
                   const match = docs.find(
-                    (d) => d?.projectName?.title === "Tk999" && d?.image
+                    (d) => d?.projectName?.title === "Tk999" && d?.image,
                   );
-                  const imgPath = match?.image
-                    || game?.image
-                    || game?.apiData?.image
-                    || "";
+                  const imgPath =
+                    match?.image || game?.image || game?.apiData?.image || "";
                   const src = imgPath ? `${IMAGE_BASE}/${imgPath}` : "";
                   return (
                     <img
@@ -320,13 +328,15 @@ export default function AnimationBanner({ data }) {
                       className="py-0.5 px-1 text-[8px] font-bold text-[#b64100] bg-[#ffd900] rounded-md mb-1 transform scale-50 group-hover:scale-100 group-hover:py-1 group-hover:px-2 group-hover:text-[10px] transition-all duration-700 ease-in-out"
                       onClick={() => !user && setShowRegisterModal(true)}
                     >
-                      {game.playText || "PLAY NOW"}
+                      {game.playText ||
+                        (language === "bn" ? "এখন খেলুন" : "PLAY NOW")}
                     </div>
                   </Link>
                   {game.freeTrialLink && (
                     <Link to={game.freeTrialLink}>
                       <div className="py-0.5 px-1 text-[8px] font-bold text-[#b64100] bg-[#ffd900] rounded-md mb-1 transform scale-50 group-hover:scale-100 group-hover:py-1 group-hover:px-2 group-hover:text-[10px] transition-all duration-700 ease-in-out">
-                        {game.trialText || "Free Trial"}
+                        {game.trialText ||
+                          (language === "bn" ? "ফ্রি ট্রায়াল" : "Free Trial")}
                       </div>
                     </Link>
                   )}
@@ -347,7 +357,7 @@ export default function AnimationBanner({ data }) {
         </div>
       </div>
 
-      {/* Inline CSS for Slider, Counter Animation, and Responsive Design */}
+      {/* Inline CSS remains unchanged */}
       <style>{`
         :root {
           --digit-size: clamp(34px, 6vw, 64px);

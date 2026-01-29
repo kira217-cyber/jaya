@@ -1,14 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
+import {
+  Autoplay,
+  Pagination,
+  EffectCoverflow,
+} from "swiper/modules";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
-// import baseURL_For_IMG_UPLOAD from "../../../utils/baseURL";
-
 import "swiper/css";
 import "swiper/css/pagination";
+import "swiper/css/effect-coverflow";
+
 import { baseURL_For_IMG_UPLOAD } from "@/utils/baseURL";
 import { getCarouselImages } from "@/features/carousel/carouselControlThunks";
 
@@ -24,79 +28,123 @@ const BannerSlider = () => {
     autoPlay,
   } = useSelector((state) => state.homePageCarousel);
 
-  // Fetch carousel images on component mount
+  const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     dispatch(getCarouselImages());
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [dispatch]);
 
-  // Determine if the device is mobile based on window width
-  const isMobile = window.innerWidth <= 768; // Adjust breakpoint as needed
-
-  // Loading state
   if (isLoading) {
-    const skeletonHeight = isMobile ? 130 : 260;
     return (
-      <div className="pb-3 lg:pb-4 w-full max-w-5xl mx-auto rounded-xl overflow-hidden">
-        <Skeleton
-          height={skeletonHeight}
-          baseColor="#062a30"
-          highlightColor="#0c424b"
-          borderRadius={16}
-        />
+      <div className="w-full max-w-5xl mx-auto">
+        <Skeleton height={180} borderRadius={12} />
       </div>
     );
   }
 
-  // Error state
   if (isError) {
-    return (
-      <div className="pb-3 lg:pb-4 w-full max-w-5xl mx-auto rounded-xl overflow-hidden">
-        <p>Error: {errorMessage}</p>
-      </div>
-    );
+    return <p className="text-center text-red-500">{errorMessage}</p>;
   }
 
-  // If no images are available
   if (!images || images.length === 0) {
-    return (
-      <div className="pb-3 lg:pb-4 w-full max-w-5xl mx-auto rounded-xl overflow-hidden">
-        <p>No images available</p>
-      </div>
-    );
+    return <p className="text-center">No images available</p>;
   }
 
   return (
-    <div
-
-      className="pb-3 lg:pb-4 w-full max-w-5xl mx-auto rounded-xl overflow-hidden"
-    >
+    <div className="w-full max-w-5xl mx-auto relative">
       <Swiper
-        spaceBetween={10}
-        pagination={{ clickable: true }}
+        modules={[Autoplay, Pagination, EffectCoverflow]}
+        effect="coverflow"
+        grabCursor
+        centeredSlides
+        slidesPerView="auto"
+        loop={infiniteLoop}
+        speed={900}
         autoplay={
           autoPlay
-            ? {
-                delay: interval,
-                disableOnInteraction: false,
-              }
+            ? { delay: interval || 3000, disableOnInteraction: false }
             : false
         }
-        loop={infiniteLoop}
-        modules={[Pagination, Autoplay]}
-        className="mySwiper"
+        coverflowEffect={{
+          rotate: 0,
+          stretch: isMobile ? 30 : 80,
+          depth: isMobile ? 70 : 200,
+          modifier: 1,
+          slideShadows: false,
+        }}
+        pagination={{ clickable: true }}
+        className="coverflowSwiper"
       >
         {images.map((slide, index) => (
-          <SwiperSlide key={index}>
+          <SwiperSlide key={index} className="coverflow-slide">
             <img
               src={`${baseURL_For_IMG_UPLOAD}s/${
                 isMobile ? slide.mobile : slide.desktop
               }`}
               alt={`Slide ${index + 1}`}
-              className="w-full h-32 sm:h-auto object-cover rounded-xl"
             />
           </SwiperSlide>
         ))}
       </Swiper>
+
+      {/* 🎨 Styling */}
+      <style>
+        {`
+          .coverflowSwiper {
+            width: 100%;
+            padding-top: 20px;
+            padding-bottom: 40px;
+          }
+
+          /* Desktop */
+          .coverflow-slide {
+            width: 850px;
+          }
+
+          .coverflow-slide img {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            border-radius: 8px;
+            display: block;
+          }
+
+          /* Mobile */
+          @media (max-width: 768px) {
+            .coverflowSwiper {
+              padding-top: 8px;
+              padding-bottom: 40px;
+            }
+
+            .coverflow-slide {
+              width: 80%;
+            }
+
+            .coverflow-slide img {
+              height: 150px;   /* ✅ MOBILE HEIGHT REDUCED */
+              border-radius: 8px;
+            }
+          }
+
+          /* Pagination */
+          .coverflowSwiper .swiper-pagination-bullet {
+            background: #000;
+            opacity: 0.3;
+          }
+
+          .coverflowSwiper .swiper-pagination-bullet-active {
+            opacity: 1;
+          }
+        `}
+      </style>
     </div>
   );
 };

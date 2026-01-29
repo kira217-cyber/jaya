@@ -1,5 +1,6 @@
+import React, { useContext, useState, useEffect } from "react";
+import { AuthContext } from "@/Context/AuthContext";
 import { Link, Outlet } from "react-router-dom";
-import { useEffect, useState, useContext } from "react";
 import Navbar from "../components/shared/navbar/Navbar";
 import Footer from "../components/shared/footer/Footer";
 import { TbUsersGroup } from "react-icons/tb";
@@ -11,8 +12,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { checkTokenThunk } from "@/features/auth/authSlice";
 import bgIMG from "../assets/main_bg.png";
 import b__2 from "../assets/22221.png";
-// OPTIONAL: if using your AuthContext for language
-import { AuthContext } from "@/Context/AuthContext";
 import SocialLinks from "@/components/shared/SocialLinks/SocialLinks";
 import PromotionModal from "@/components/home/Promotions/PromotionModal";
 
@@ -34,7 +33,6 @@ const translations = {
   },
 };
 
-// Nav Items (unchanged)
 const navItems = [
   {
     id: 1,
@@ -64,20 +62,17 @@ const navItems = [
 ];
 
 const MainLayout = () => {
+  const { language, adminHomeControl } = useContext(AuthContext); // Now using adminHomeControl
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window !== "undefined") {
       return window.innerWidth >= 1024;
     }
     return true;
   });
-
   const [showLogo, setShowLogo] = useState(false);
 
   const dispatch = useDispatch();
   const { isAuth } = useSelector((state) => state.auth);
-
-  // Language from context
-  const { language } = useContext(AuthContext); // "en" or "bn"
 
   // Helper for translation
   const t = (key) => translations[language]?.[key] || key;
@@ -94,20 +89,17 @@ const MainLayout = () => {
     const lastDisplay = localStorage.getItem("lastLogoDisplay");
     const now = Date.now();
     const fifteenMinutes = 15 * 60 * 1000;
-
     if (!lastDisplay || now - parseInt(lastDisplay) >= fifteenMinutes) {
       setShowLogo(true);
-
       const hideTimeout = setTimeout(() => {
         setShowLogo(false);
         localStorage.setItem("lastLogoDisplay", now.toString());
       }, 4000);
-
       return () => clearTimeout(hideTimeout);
     }
   }, []);
 
-  // Resize listener
+  // Resize listener for sidebar
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
@@ -116,7 +108,6 @@ const MainLayout = () => {
         setSidebarOpen(false);
       }
     };
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -128,11 +119,29 @@ const MainLayout = () => {
     } else {
       document.body.style.overflow = "auto";
     }
-
     return () => {
       document.body.style.overflow = "auto";
     };
   }, [sidebarOpen]);
+
+  // ── NEW: Set dynamic favicon and title from adminHomeControl ──
+  useEffect(() => {
+    if (adminHomeControl) {
+      // Set page title
+      document.title = adminHomeControl.websiteTitle || "Jaya999";
+
+      // Set favicon
+      const link =
+        document.querySelector("link[rel*='icon']") ||
+        document.createElement("link");
+      link.type = "image/png";
+      link.rel = "icon";
+      link.href = adminHomeControl?.favicon
+        ? `${import.meta.env.VITE_BACKEND_API}uploads/${adminHomeControl.favicon}`
+        : "/favicon.png"; // fallback if no favicon in DB
+      document.head.appendChild(link);
+    }
+  }, [adminHomeControl]);
 
   const toggleSidebar = () => {
     setSidebarOpen((prev) => !prev);
@@ -144,6 +153,7 @@ const MainLayout = () => {
       style={{ backgroundImage: `url(${bgIMG})` }}
     >
       <PromotionModal />
+
       {/* Logo Overlay */}
       {showLogo && (
         <div
@@ -196,12 +206,11 @@ const MainLayout = () => {
         <div className="flex-1 pt-14 sm:pt-[70px] lg:pt-20 lg:w-[83px] xl:w-[86%] w-full">
           <Outlet />
           <Footer />
-          {/* Social Icons (unchanged) */}
-          <SocialLinks></SocialLinks>
+          <SocialLinks />
         </div>
       </div>
 
-      {/* Bottom Navigation (Bangla + English Switch Added) */}
+      {/* Bottom Navigation */}
       <div
         style={{
           background: "linear-gradient(180deg, #005a5a, #003e3e 50%, #002c2c)",

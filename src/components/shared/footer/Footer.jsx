@@ -11,7 +11,7 @@ import { AuthContext } from "@/Context/AuthContext"; // Adjust path if needed
 import logo_footer from "../../../assets/logo.png";
 
 const Footer = () => {
-  const { language } = useContext(AuthContext);
+  const { language, adminHomeControl } = useContext(AuthContext);
 
   // Translation Object
   const t = {
@@ -190,22 +190,21 @@ const Footer = () => {
               </div>
 
               {/* Desktop: Vertical List – Exactly Like Your Screenshot */}
-               {/* Help Center */}
-            <div className="hidden lg:block">
-              
-              <ul className="flex flex-col gap-1  text-base">
-                {gameLinks.map((item, index) => (
-                  <li key={index}>
-                    <Link
-                      to={item.link}
-                      className="relative inline-block after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-0 after:bg-teal-300 after:transition-all after:duration-300 hover:after:w-full hover:text-teal-300"
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              {/* Help Center */}
+              <div className="hidden lg:block">
+                <ul className="flex flex-col gap-1  text-base">
+                  {gameLinks.map((item, index) => (
+                    <li key={index}>
+                      <Link
+                        to={item.link}
+                        className="relative inline-block after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-0 after:bg-teal-300 after:transition-all after:duration-300 hover:after:w-full hover:text-teal-300"
+                      >
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
 
@@ -214,20 +213,24 @@ const Footer = () => {
             <div className="flex gap-2">
               <img
                 className="w-16 md:w-20 h-16 md:h-20"
-                src={logo_footer}
+                src={
+                  adminHomeControl?.favicon
+                    ? `${import.meta.env.VITE_BACKEND_API}uploads/${adminHomeControl.favicon}`
+                    : `${logo_footer}`
+                } // fallback if no favicon in DB}
                 alt="Logo"
               />
               <p className="text-[12px] md:text-base mb-4 text-[#e0fff7]">
                 {language === "bn" ? (
                   <>
-                    Bajigo ওয়েবসাইটটি কোম্পানি দ্বারা পরিচালিত হয়, লাইসেন্স
+                    এই ওয়েবসাইটটি কোম্পানি দ্বারা পরিচালিত হয়, লাইসেন্স
                     নম্বর GLH-OCCHKTW079780120 এর অধীনে এবং Gaming Services
                     Provider N.V. দ্বারা নিয়ন্ত্রিত। কুরাসাও সরকার কর্তৃক
                     অনুমোদিত, লাইসেন্স নম্বর 375/JAZ।
                   </>
                 ) : (
                   <>
-                    Bajigo website is operated by company, under license number
+                    This website is operated by company, under license number
                     GLH-OCCHKTW079780120 issued to it and regulated by Gaming
                     Services Provider N.V., authorized by the Government of
                     Curaçao under license number 375/JAZ.
